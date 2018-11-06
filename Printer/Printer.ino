@@ -12,7 +12,6 @@ WebSocketsServer webSocket(81);
 
 QueueList <String> textQueue;
 
-int rowsToPrint = 0;
 int totalRowsToPrint = 0;
 int maxRow = 20;
 bool isPrinting = false;
@@ -159,9 +158,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         break;
       }
       else{
-        textQueue.push(words);
-        //Serial.println(words);
-        //wordToBraille(words);
+        if(totalRowsToPrint<maxRow){
+          totalRowsToPrint ++;
+          textQueue.push(words);
+        }
+        else{
+          Serial.println("Paper is full. Use another paper.");
+          webSocket.sendTXT(num, "#paperIsFull");
+        }
         break;
       }
       break;

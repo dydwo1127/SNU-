@@ -40,6 +40,9 @@ void setup() {
 void loop() {
   webSocket.loop();                           // constantly check for websocket events
   server.handleClient();                      // run the server
+  if(!isPrinting && !textQueue.isEmpty()){
+    Print(textQueue.pop());
+  }
 }
 
 /*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
@@ -156,8 +159,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         break;
       }
       else{
-        Serial.println(words);
-        wordToBraille(words);
+        textQueue.push(words);
+        //Serial.println(words);
+        //wordToBraille(words);
         break;
       }
       break;
@@ -437,10 +441,14 @@ void wordToCode(int code[], char singleWord){
   }
 }
 void Print(String textLine){
+  isPrinting = true;
+  Serial.println(textLine);
+  wordToBraille(textLine);
   for(int i =0; i<10;i++){
     Serial.print(".");
     delay(100);
   }
   Serial.println("done");
+  isPrinting = false;
 }
 

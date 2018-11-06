@@ -37,8 +37,8 @@ void setup() {
 /*__________________________________________________________LOOP__________________________________________________________*/
 
 void loop() {
-  webSocket.loop();                           // constantly check for websocket events
-  server.handleClient();                      // run the server
+  webSocket.loop();
+  server.handleClient();
   if(!isPrinting && !textQueue.isEmpty()){
     Print(textQueue.pop());
   }
@@ -145,12 +145,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
           words += words_[i];
         }
       }
-      if(words == "#paperOut"){
-        Serial.println("PaperOut");
-        break;
-        
-      }
-      else if(words.length()>20){
+      if(words.length()>20){
         Serial.print("New Client(client num : ");
         Serial.print(num);
         Serial.print(") - ");
@@ -158,9 +153,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         break;
       }
       else{
-        if(totalRowsToPrint<maxRow){
+        if(words == "#paperOut"){
+          textQueue.push(words);
+        }
+        else if(totalRowsToPrint<maxRow){
           totalRowsToPrint ++;
           textQueue.push(words);
+          Serial.print("################################");
+          Serial.println(totalRowsToPrint);
         }
         else{
           Serial.println("Paper is full. Use another paper.");
@@ -222,230 +222,14 @@ void wordToBraille(String words){
   Serial.println();
 }
 
-void wordToCode(int code[], char singleWord){
-  switch(singleWord){
-    case 'a':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 0;
-      code[3] = 0;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'b':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 1;
-      code[3] = 0;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'c':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 0;
-      code[3] = 0;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'd':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 0;
-      code[3] = 1;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'e':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 0;
-      code[3] = 1;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'f':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 0;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'g':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 1;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'h':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 1;
-      code[3] = 1;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'i':
-      code[0] = 0;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 0;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'j':
-      code[0] = 0;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 1;
-      code[4] = 0;
-      code[5] = 0;
-      break;
-    case 'k':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 0;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'l':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 1;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'm':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 0;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'n':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 0;
-      code[3] = 1;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'o':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 0;
-      code[3] = 1;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'p':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'q':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 1;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'r':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 1;
-      code[3] = 1;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 's':
-      code[0] = 0;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 't':
-      code[0] = 0;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 1;
-      code[4] = 1;
-      code[5] = 0;
-      break;
-    case 'u':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 0;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 1;
-      break;
-    case 'v':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 1;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 1;
-      break;
-    case 'w':
-      code[0] = 0;
-      code[1] = 1;
-      code[2] = 1;
-      code[3] = 1;
-      code[4] = 0;
-      code[5] = 1;
-      break;
-    case 'x':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 0;
-      code[3] = 0;
-      code[4] = 1;
-      code[5] = 1;
-      break;
-    case 'y':
-      code[0] = 1;
-      code[1] = 1;
-      code[2] = 0;
-      code[3] = 1;
-      code[4] = 1;
-      code[5] = 1;
-      break;
-    case 'z':
-      code[0] = 1;
-      code[1] = 0;
-      code[2] = 0;
-      code[3] = 1;
-      code[4] = 1;
-      code[5] = 1;
-      break;
-    case ' ':
-      code[0] = 9;
-      code[1] = 9;
-      code[2] = 9;
-      code[3] = 9;
-      code[4] = 9;
-      code[5] = 9;
-      break;
-    default:
-      break;
-  }
-}
 void Print(String textLine){
   isPrinting = true;
+  if(textLine == "#paperOut"){
+    totalRowsToPrint = 0;
+    Serial.println("Paper Out");
+    isPrinting = false;
+    return;
+  }
   Serial.println(textLine);
   wordToBraille(textLine);
   for(int i =0; i<10;i++){

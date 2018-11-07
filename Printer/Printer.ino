@@ -48,7 +48,7 @@ void loop() {
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
-  wifiMulti.addAP("steam2.4", "a112857h");   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP("VanHot", "a112857h");   // add Wi-Fi networks you want to connect to
 
   Serial.println("Connecting");
   while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect

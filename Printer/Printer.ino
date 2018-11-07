@@ -135,16 +135,16 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       }
       break;
     case WStype_TEXT:                     // if new text data is received
-      String words = "";
-      String words_ = (char *) payload;
-      for(int i = 0; i<words_.length();i++){
+      //String words = "";
+      String words = (char *) payload;
+      /*for(int i = 0; i<words_.length();i++){
         if(words_[i] == '&'){
           break;
         }
         else{
           words += words_[i];
         }
-      }
+      }*/
       if(words.length()>20){
         Serial.print("New Client(client num : ");
         Serial.print(num);
@@ -192,51 +192,3 @@ String getContentType(String filename) { // determine the filetype of a given fi
   else if (filename.endsWith(".gz")) return "application/x-gzip";
   return "text/plain";
 }
-
-void wordToBraille(String words){
-  int wordLength = words.length();
-  int codeArray[wordLength][6];
-  for(int i = 0; i<wordLength; i++){
-    wordToCode(codeArray[i],words[i]);
-  }
-  for(int i = 0; i<wordLength; i++){
-    for(int j = 0; j<6; j++){
-      Serial.print(codeArray[i][j]);
-    }
-  }
-  Serial.println();
-  for(int i = 0; i<wordLength; i++){
-    Serial.print(codeArray[i][0]);
-    Serial.print(codeArray[i][1]);
-  }
-  Serial.println();
-  for(int i = 0; i<wordLength; i++){
-    Serial.print(codeArray[i][2]);
-    Serial.print(codeArray[i][3]);
-  }
-  Serial.println();
-  for(int i = 0; i<wordLength; i++){
-    Serial.print(codeArray[i][4]);
-    Serial.print(codeArray[i][5]);
-  }
-  Serial.println();
-}
-
-void Print(String textLine){
-  isPrinting = true;
-  if(textLine == "#paperOut"){
-    totalRowsToPrint = 0;
-    Serial.println("Paper Out");
-    isPrinting = false;
-    return;
-  }
-  Serial.println(textLine);
-  wordToBraille(textLine);
-  for(int i =0; i<10;i++){
-    Serial.print(".");
-    delay(100);
-  }
-  Serial.println("done");
-  isPrinting = false;
-}
-

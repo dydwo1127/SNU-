@@ -10,11 +10,8 @@ ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
 
-QueueList <String> textQueue;
-
 int totalRowsToPrint = 0;
 int maxRow = 20;
-bool isPrinting = false;
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
@@ -39,16 +36,13 @@ void setup() {
 void loop() {
   webSocket.loop();
   server.handleClient();
-  if(!isPrinting && !textQueue.isEmpty()){
-    Print(textQueue.pop());
-  }
 }
 
 /*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
-  wifiMulti.addAP("VanHot", "a112857h");   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP("song", "a112857h");   // add Wi-Fi networks you want to connect to
 
   Serial.println("Connecting");
   while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
@@ -135,38 +129,22 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       }
       break;
     case WStype_TEXT:                     // if new text data is received
-      //String words = "";
-      String words = (char *) payload;
-      /*for(int i = 0; i<words_.length();i++){
-        if(words_[i] == '&'){
-          break;
-        }
-        else{
-          words += words_[i];
-        }
-      }*/
-      if(words.length()>20){
-        Serial.print("New Client(client num : ");
-        Serial.print(num);
-        Serial.print(") - ");
-        Serial.println(words_);
+      String words = (char *)payload;
+      if(words.length() == 0){
         break;
       }
+      if(words == "#paperOut"){
+        totalRowsToPrint = 0;
+        Serial.print(words);
+        Serial.flush();
+      }
+      else if(totalRowsToPrint<maxRow){
+        totalRowsToPrint ++;
+        Serial.print(words);
+        Serial.flush();
+      }
       else{
-        if(words == "#paperOut"){
-          textQueue.push(words);
-        }
-        else if(totalRowsToPrint<maxRow){
-          totalRowsToPrint ++;
-          textQueue.push(words);
-          Serial.print("################################");
-          Serial.println(totalRowsToPrint);
-        }
-        else{
-          Serial.println("Paper is full. Use another paper.");
-          webSocket.sendTXT(num, "#paperIsFull");
-        }
-        break;
+        webSocket.sendTXT(num, "Paper Is Full!");
       }
       break;
   }

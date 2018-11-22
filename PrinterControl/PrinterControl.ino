@@ -1,15 +1,33 @@
+#include <SoftwareSerial.h>
+#include <QueueList.h>
+
+SoftwareSerial BT(2,3);
+
+QueueList<String> textQueue;
+
+bool isPrinting = false;
+
 void setup() {
   Serial.begin(115200);
+  BT.begin(9600);
 }
 
 void loop() {
-  
+  if(Serial.available()){
+    String temp;
+    while(Serial.available()){
+      temp += (char)Serial.read();
+      delay(2);
+    }
+    BT.println(temp);
+    textQueue.push(temp);
+  }
 }
 
 String ReceiveData(){
   String words;
-  while(Serial.available(){
-    words += Serial.read();
+  while(Serial.available()){
+    words += (char)Serial.read();
     delay(2);
   }
   return words;
@@ -47,7 +65,6 @@ void wordToBraille(String words){
 void Print(String textLine){
   isPrinting = true;
   if(textLine == "#paperOut"){
-    totalRowsToPrint = 0;
     Serial.println("Paper Out");
     isPrinting = false;
     return;

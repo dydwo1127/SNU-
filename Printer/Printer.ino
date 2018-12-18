@@ -3,6 +3,7 @@
 #include <FS.h>
 #include <WebSocketsServer.h>
 #include <QueueList.h>
+#include <SoftwareSerial.h>
 
 
 ESP8266WiFiMulti wifiMulti;
@@ -10,11 +11,13 @@ ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
 
-QueueList <String> textQueue;
+QueueList<String> textQueue;
+QueueList<String> allText;
+
+SoftwareSerial BTSerial(2,0);
 
 int totalRowsToPrint = 0;
-int maxRow = 20;
-bool isPrinting = false;
+int maxRow = 10;
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
@@ -22,7 +25,11 @@ void setup() {
 
   Serial.begin(115200);        // Start the Serial communication to send messages to the computer
   delay(10);
-  Serial.println("\r\n");
+  BTSerial.begin(9600);
+//  Serial.println("\r\n");
+
+  pinMode(5, INPUT);
+  pinMode(4, INPUT);
 
   startWiFi();                 // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
   
@@ -39,8 +46,13 @@ void setup() {
 void loop() {
   webSocket.loop();
   server.handleClient();
-  if(!isPrinting && !textQueue.isEmpty()){
-    Print(textQueue.pop());
+  sendWordsToPrinter();
+  if(digitalRead(4)){
+    totalRowsToPrint = 0;
+    for(int i = 0; i < allText.count(); i++){
+      allText.pop();
+    }
+    webSocket.broadcastTXT("@empty");
   }
 }
 
@@ -48,43 +60,43 @@ void loop() {
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
-  wifiMulti.addAP("VanHot", "a112857h");   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP("VanHot3", "choi8841");   // add Wi-Fi networks you want to connect to
 
-  Serial.println("Connecting");
+//  Serial.println("Connecting");
   while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
     delay(250);
-    Serial.print('.');
+//    Serial.print('.');
   }
-  Serial.println("\r\n");
+//  Serial.println("\r\n");
   if(WiFi.softAPgetStationNum() == 0) {      // If the ESP is connected to an AP
-    Serial.print("Connected to ");
-    Serial.println(WiFi.SSID());             // Tell us what network we're connected to
-    Serial.print("IP address:\t");
-    Serial.print(WiFi.localIP());            // Send the IP address of the ESP8266 to the computer
+//    Serial.print("Connected to ");
+//    Serial.println(WiFi.SSID());             // Tell us what network we're connected to
+//    Serial.print("IP address:\t");
+    BTSerial.print(WiFi.localIP());            // Send the IP address of the ESP8266 to the computer
   } else {                                   // If a station is connected to the ESP SoftAP
-    Serial.print("Station connected to ESP8266 AP");
+//    Serial.print("Station connected to ESP8266 AP");
   }
-  Serial.println("\r\n");
+//  Serial.println("\r\n");
 }
 
 void startSPIFFS() { // Start the SPIFFS and list all contents
   SPIFFS.begin();                             // Start the SPI Flash File System (SPIFFS)
-  Serial.println("SPIFFS started. Contents:");
+//  Serial.println("SPIFFS started. Contents:");
   {
     Dir dir = SPIFFS.openDir("/");
     while (dir.next()) {                      // List the file system contents
       String fileName = dir.fileName();
       size_t fileSize = dir.fileSize();
-      Serial.printf("\tFS File: %s, size: %s\r\n", fileName.c_str(), formatBytes(fileSize).c_str());
+//      Serial.printf("\tFS File: %s, size: %s\r\n", fileName.c_str(), formatBytes(fileSize).c_str());
     }
-    Serial.printf("\n");
+//    Serial.printf("\n");
   }
 }
 
 void startWebSocket() { // Start a WebSocket server
   webSocket.begin();                          // start the websocket server
   webSocket.onEvent(webSocketEvent);          // if there's an incomming websocket message, go to function 'webSocketEvent'
-  Serial.println("WebSocket server started.");
+//  Serial.println("WebSocket server started.");
 }
 
 void startServer() { // Start a HTTP server with a file read handler and an upload handler
@@ -96,7 +108,7 @@ void startServer() { // Start a HTTP server with a file read handler and an uplo
                                               // and check if the file exists
 
   server.begin();                             // start the HTTP server
-  Serial.println("HTTP server started.");
+//  Serial.println("HTTP server started.");
 }
 
 /*__________________________________________________________SERVER_HANDLERS__________________________________________________________*/
@@ -132,42 +144,16 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
         //IPAddress ip = webSocket.remoteIP(num);
+        for(int i = 0; i < allText.count(); i++){
+          String temp = allText.pop();
+          webSocket.sendTXT(num, temp);
+          allText.push(temp);
+        }
       }
       break;
     case WStype_TEXT:                     // if new text data is received
-      String words = "";
-      String words_ = (char *) payload;
-      for(int i = 0; i<words_.length();i++){
-        if(words_[i] == '&'){
-          break;
-        }
-        else{
-          words += words_[i];
-        }
-      }
-      if(words.length()>20){
-        Serial.print("New Client(client num : ");
-        Serial.print(num);
-        Serial.print(") - ");
-        Serial.println(words_);
-        break;
-      }
-      else{
-        if(words == "#paperOut"){
-          textQueue.push(words);
-        }
-        else if(totalRowsToPrint<maxRow){
-          totalRowsToPrint ++;
-          textQueue.push(words);
-          Serial.print("################################");
-          Serial.println(totalRowsToPrint);
-        }
-        else{
-          Serial.println("Paper is full. Use another paper.");
-          webSocket.sendTXT(num, "#paperIsFull");
-        }
-        break;
-      }
+      String words = (char *)payload;
+      handlePayload(num, words);
       break;
   }
 }
@@ -193,50 +179,42 @@ String getContentType(String filename) { // determine the filetype of a given fi
   return "text/plain";
 }
 
-void wordToBraille(String words){
-  int wordLength = words.length();
-  int codeArray[wordLength][6];
-  for(int i = 0; i<wordLength; i++){
-    wordToCode(codeArray[i],words[i]);
-  }
-  for(int i = 0; i<wordLength; i++){
-    for(int j = 0; j<6; j++){
-      Serial.print(codeArray[i][j]);
+void handlePayload(int num, String words){
+    if(words.length() == 0){
+      return;
     }
-  }
-  Serial.println();
-  for(int i = 0; i<wordLength; i++){
-    Serial.print(codeArray[i][0]);
-    Serial.print(codeArray[i][1]);
-  }
-  Serial.println();
-  for(int i = 0; i<wordLength; i++){
-    Serial.print(codeArray[i][2]);
-    Serial.print(codeArray[i][3]);
-  }
-  Serial.println();
-  for(int i = 0; i<wordLength; i++){
-    Serial.print(codeArray[i][4]);
-    Serial.print(codeArray[i][5]);
-  }
-  Serial.println();
+    else if(words == "#paperIn"){
+      textQueue.push(words);
+    }
+    else if(words == "#paperOut"){
+      if(totalRowsToPrint != maxRow +1){
+        totalRowsToPrint = maxRow + 1;
+        textQueue.push(words);
+        webSocket.broadcastTXT("+paperOut");
+        allText.push("+paperOut");
+      }
+      else{
+        webSocket.sendTXT(num, "!Wait unitl paper out");
+      }
+    }
+    else if(totalRowsToPrint<maxRow){
+      totalRowsToPrint ++;
+      textQueue.push(words);
+      webSocket.broadcastTXT("+" + words);
+      allText.push("+" + words);
+    }
+    else if(totalRowsToPrint == maxRow +1){
+      webSocket.sendTXT(num, "!Wait unitl paper out");
+    }
+    else{
+      webSocket.sendTXT(num, "!Paper Is Full!");
+    }
 }
 
-void Print(String textLine){
-  isPrinting = true;
-  if(textLine == "#paperOut"){
-    totalRowsToPrint = 0;
-    Serial.println("Paper Out");
-    isPrinting = false;
-    return;
+void sendWordsToPrinter(){
+  if(!textQueue.isEmpty() && !digitalRead(5)){
+    Serial.print(textQueue.pop());
+    delay(50);
+    //Serial.flush();
   }
-  Serial.println(textLine);
-  wordToBraille(textLine);
-  for(int i =0; i<10;i++){
-    Serial.print(".");
-    delay(100);
-  }
-  Serial.println("done");
-  isPrinting = false;
 }
-

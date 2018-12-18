@@ -12,8 +12,9 @@
             <input style="height:50px;width:700px;font-size:25pt;" type ="text" id="textToPrint" onkeydown = "if (event.keyCode == 13) 
             document.getElementById('printButton').click()" maxlength ="20" size="50"><br/><br/>
             <button id="printButton" onclick="sendText()" style="height:40px;width:80px;font-size:15pt;">Print</button><br/><br/>
+            <button onclick="paperIn()" style="height:40px;width:120px;font-size:15pt;">Paper In</button>
             <button onclick="paperOut()" style="height:40px;width:120px;font-size:15pt;">Paper Out</button><br/><br/>
-            <textarea readonly="readonly" style="height: 250px; width:400px; font-size:20pt;" id="textsToPrint"></textarea><br/>
+            <textarea readonly="readonly" style="height: 220px; width:200px; font-size:10pt;" id="textsToPrint"></textarea><br/>
             <img src="https://www.pharmabraille.com/wp-content/uploads/2015/11/braille-alphabet-and-braille-numbers.png"
             alt="Alphabet Braille" align="middle" style="width:930px;height:392px;">
         </div>
